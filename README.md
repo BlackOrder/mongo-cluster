@@ -5,7 +5,6 @@ Custom docker image with automatic clustering. Beware!!: The service can only be
 ### Table of Contents
 1. **[Setup MongoDB CLuster](#setup-mongodb-cluster)**<br>
     + **[Docker](#docker)**<br>
-        * **[Prepare network](#prepare-network)**<br>
         * **[Prepare variables](#prepare-variables)**<br>
         * **[Create cluster key](#create-cluster-key)**<br>
             1. **[One line](#one-line)**<br>
@@ -14,11 +13,6 @@ Custom docker image with automatic clustering. Beware!!: The service can only be
 
 ## Setup MongoDB CLuster
 ### Docker
-#### Prepare network:
-```
-docker network create mongo_cluster_subnet
-```
-
 #### Prepare variables:
 ```
 cp .env.example .env

@@ -2,8 +2,8 @@ version: "3"
 name: mongo-cluster
 services:
   mongodb1:
-    build: .
-    image: mongo-cluster
+    # build: .
+    image: blackorder/mongo-cluster
     restart: always
     ports:
       - '${FORWARD_MONGODB_PORT:-27017}:27017'
@@ -17,7 +17,7 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - mongo_cluster_subnet
+      - cluster_subnet
     environment:
       MONGODB_CLUSTER_HOSTS: ${MONGODB_CLUSTER_HOSTS:?err}
       MONGODB_CLUSTER_KEY: ${MONGODB_CLUSTER_KEY:?err}
@@ -25,8 +25,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:?err}
 
   mongodb2:
-    build: .
-    image: mongo-cluster
+    # build: .
+    image: blackorder/mongo-cluster
     restart: always
     volumes:
       - mongo2_db:/data/db
@@ -38,15 +38,15 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - mongo_cluster_subnet
+      - cluster_subnet
     environment:
       MONGODB_CLUSTER_KEY: ${MONGODB_CLUSTER_KEY:?err}
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:?err}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:?err}
 
   mongodb3:
-    build: .
-    image: mongo-cluster
+    # build: .
+    image: blackorder/mongo-cluster
     restart: always
     volumes:
       - mongo3_db:/data/db
@@ -58,7 +58,7 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - mongo_cluster_subnet
+      - cluster_subnet
     environment:
       MONGODB_CLUSTER_KEY: ${MONGODB_CLUSTER_KEY:?err}
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:?err}
@@ -70,7 +70,7 @@ services:
     ports:
       - '${FORWARD_MONGODB_EXPRESS_PORT:-8081}:8081'
     networks:
-      - mongo_cluster_subnet
+      - cluster_subnet
     depends_on:
       mongodb1:
         condition: service_healthy
@@ -83,8 +83,8 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: ${MONGODB_PASSWORD:?err}
 
 networks:
-  mongo_cluster_subnet:
-    external: true
+  cluster_subnet:
+    driver: bridge
 volumes:
   mongo1_db: {}
   mongo1_configdb: {}
