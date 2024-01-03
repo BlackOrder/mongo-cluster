@@ -19,6 +19,7 @@ services:
       start_period: 10s
     networks:
       - cluster_subnet
+      - development
     environment:
       MONGODB_CLUSTER_HOSTS: ${MONGODB_CLUSTER_HOSTS:?err}
       MONGODB_CLUSTER_KEY: ${MONGODB_CLUSTER_KEY:?err}
@@ -41,6 +42,7 @@ services:
       start_period: 10s
     networks:
       - cluster_subnet
+      - development
     environment:
       MONGODB_CLUSTER_KEY: ${MONGODB_CLUSTER_KEY:?err}
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:?err}
@@ -62,6 +64,7 @@ services:
       start_period: 10s
     networks:
       - cluster_subnet
+      - development
     environment:
       MONGODB_CLUSTER_KEY: ${MONGODB_CLUSTER_KEY:?err}
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:?err}
@@ -75,6 +78,7 @@ services:
       - '${FORWARD_MONGODB_EXPRESS_PORT:-8081}:8081'
     networks:
       - cluster_subnet
+      - development
     depends_on:
       mongodb1:
         condition: service_healthy
@@ -87,6 +91,8 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: ${MONGODB_PASSWORD:?err}
 
 networks:
+  development:
+    external: true
   cluster_subnet:
     driver: bridge
 volumes:
