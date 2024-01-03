@@ -1,5 +1,8 @@
 FROM mongo:latest
 
+LABEL org.opencontainers.image.authors="𝓑𝓵𝓪𝓬𝓴𝓞𝓻𝓭𝓮𝓻"
+LABEL org.opencontainers.image.source="https://github.com/BlackOrder/mongo-cluster"
+
 ENV MONGODB_HOST 'mongodb'
 
 COPY ./init_rs.sh /data/db/init_rs.sh
