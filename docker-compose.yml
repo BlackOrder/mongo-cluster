@@ -3,8 +3,9 @@ name: mongo-cluster
 services:
   mongodb1:
     # build: .
-    image: blackorder/mongo-cluster
+    image: blackorder/mongo-cluster:latest
     restart: always
+    hostname: mongodb1
     ports:
       - '${FORWARD_MONGODB_PORT:-27017}:27017'
     volumes:
@@ -26,8 +27,9 @@ services:
 
   mongodb2:
     # build: .
-    image: blackorder/mongo-cluster
+    image: blackorder/mongo-cluster:latest
     restart: always
+    hostname: mongodb2
     volumes:
       - mongo2_db:/data/db
       - mongo2_configdb:/data/configdb
@@ -46,8 +48,9 @@ services:
 
   mongodb3:
     # build: .
-    image: blackorder/mongo-cluster
+    image: blackorder/mongo-cluster:latest
     restart: always
+    hostname: mongodb3
     volumes:
       - mongo3_db:/data/db
       - mongo3_configdb:/data/configdb
@@ -67,6 +70,7 @@ services:
   mongo-express:
     image: mongo-express:latest
     restart: always
+    hostname: mongo-express
     ports:
       - '${FORWARD_MONGODB_EXPRESS_PORT:-8081}:8081'
     networks:
