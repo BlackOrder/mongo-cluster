@@ -18,7 +18,6 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - cluster_subnet
       - development
     environment:
       MONGODB_CLUSTER_HOSTS: ${MONGODB_CLUSTER_HOSTS:?err}
@@ -41,7 +40,6 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - cluster_subnet
       - development
     environment:
       MONGODB_CLUSTER_KEY: ${MONGODB_CLUSTER_KEY:?err}
@@ -63,7 +61,6 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - cluster_subnet
       - development
     environment:
       MONGODB_CLUSTER_KEY: ${MONGODB_CLUSTER_KEY:?err}
@@ -77,7 +74,6 @@ services:
     ports:
       - '${FORWARD_MONGODB_EXPRESS_PORT:-8081}:8081'
     networks:
-      - cluster_subnet
       - development
     depends_on:
       mongodb1:
@@ -93,8 +89,6 @@ services:
 networks:
   development:
     external: true
-  cluster_subnet:
-    driver: bridge
 volumes:
   mongo1_db: {}
   mongo1_configdb: {}
