@@ -1,0 +1,30 @@
+version: "3"
+name: mongo-cluster
+services:
+  mongodb1:
+    restart: always
+    ports:
+      - '${FORWARD_MONGODB_PORT:-27017}:27017'
+    networks:
+      - development
+
+  mongodb2:
+    restart: always
+    networks:
+      - development
+
+  mongodb3:
+    restart: always
+    networks:
+      - development
+      
+  mongo-express:
+    restart: always
+    ports:
+      - '${FORWARD_MONGODB_EXPRESS_PORT:-8081}:8081'
+    networks:
+      - development
+
+networks:
+  development:
+    external: true
