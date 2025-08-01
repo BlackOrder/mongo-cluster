@@ -44,19 +44,38 @@ services:
       bash -c "
         echo 'Waiting for MongoDB instances to be ready...' &&
         sleep 10 &&
-        echo 'Initializing replica set...' &&
-        mongosh --host mongodb1:27017 -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --eval \"
+        echo 'Getting configuration for replica set...' &&
+        MONGODB1_HOST='${MONGODB1_HOST:-mongodb1}' &&
+        MONGODB2_HOST='${MONGODB2_HOST:-mongodb2}' &&
+        MONGODB3_HOST='${MONGODB3_HOST:-mongodb3}' &&
+        MONGODB1_PORT='${FORWARD_MONGODB1_PORT}' &&
+        MONGODB2_PORT='${FORWARD_MONGODB2_PORT}' &&
+        MONGODB3_PORT='${FORWARD_MONGODB3_PORT}' &&
+        echo \"Configuration: Primary=\$$MONGODB1_HOST:\$$MONGODB1_PORT, Secondary1=\$$MONGODB2_HOST:\$$MONGODB2_PORT, Secondary2=\$$MONGODB3_HOST:\$$MONGODB3_PORT\" &&
+        echo 'Initializing replica set with consistent port mapping...' &&
+        echo 'NOTE: Each MongoDB instance runs on its assigned port both internally and externally' &&
+        mongosh --host \$$MONGODB1_HOST:\$$MONGODB1_PORT -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --eval \"
           rs.initiate({
             _id: 'rs',
             version: 1,
             members: [
-              { _id: 0, host: 'mongodb1:27017', priority: 1000 },
-              { _id: 1, host: 'mongodb2:27017', priority: 999 },
-              { _id: 2, host: 'mongodb3:27017', priority: 998 }
+              { _id: 0, host: '\$$MONGODB1_HOST:\$$MONGODB1_PORT', priority: 1000 },
+              { _id: 1, host: '\$$MONGODB2_HOST:\$$MONGODB2_PORT', priority: 999 },
+              { _id: 2, host: '\$$MONGODB3_HOST:\$$MONGODB3_PORT', priority: 998 }
             ]
           });
         \" &&
-        echo 'Replica set initialized successfully!' &&
+        echo 'Replica set initialized with consistent port mapping!' &&
+        echo 'Verifying configuration...' &&
+        mongosh --host \$$MONGODB1_HOST:\$$MONGODB1_PORT -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --eval \"
+          console.log('Replica Set Configuration:');
+          rs.config().members.forEach(function(member) {
+            console.log('  Member ' + member._id + ': ' + member.host);
+          });
+          console.log('');
+          console.log('✅ Client redirection will now work correctly!');
+          console.log('Each node runs on its assigned port both internally and externally.');
+        \" &&
         echo 'Cluster setup completed successfully!'
       "
     restart: "no"

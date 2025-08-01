@@ -75,6 +75,13 @@ make test-replica
 │  └─────────────┘    └─────────────┘    └─────────────┘    │
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐   │
+│  │            Hostname Resolution (/etc/hosts)         │   │
+│  │   mongodb1 → 127.0.0.1:27017 (Primary)            │   │
+│  │   mongodb2 → 127.0.0.1:27018 (Secondary 1)        │   │
+│  │   mongodb3 → 127.0.0.1:27019 (Secondary 2)        │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
 │  │              Shared Security Keyfile                │   │
 │  │            (Auto-Generated, 700-byte)              │   │
 │  └─────────────────────────────────────────────────────┘   │
@@ -127,11 +134,13 @@ The interactive setup will prompt for:
   - Primary MongoDB Port
   - Secondary 1 MongoDB Port  
   - Secondary 2 MongoDB Port
+- **Hostname Configuration** (defaults: mongodb1, mongodb2, mongodb3)
+  - Primary hostname
+  - Secondary 1 hostname
+  - Secondary 2 hostname
 
 You can use different port formats:
 - `27017` - Localhost only (secure default)
-- `0.0.0.0:27017` - All interfaces (external access)
-- `192.168.1.100:27017` - Specific IP address
 
 #### Example Interactive Setup
 ```bash
@@ -145,7 +154,7 @@ MongoDB Password [devpassword123]:
 Confirm Password: 
 
 📌 Port Configuration (press Enter for defaults):
-   Format: [host:]port (e.g., 27017 or 0.0.0.0:27017 for external access)
+   Format: port (e.g., 27017)
 
 MongoDB Primary Port [27017]: 
 MongoDB Secondary 1 Port [27018]: 27028
@@ -199,12 +208,45 @@ FORWARD_MONGODB1_PORT=27017    # Primary node
 FORWARD_MONGODB2_PORT=27018    # Secondary node 1  
 FORWARD_MONGODB3_PORT=27019    # Secondary node 2
 
+# Hostname configuration (for replica set member identification)
+MONGODB1_HOST=mongodb1         # Primary hostname
+MONGODB2_HOST=mongodb2         # Secondary 1 hostname
+MONGODB3_HOST=mongodb3         # Secondary 2 hostname
+
 # Web UI Configuration (added when ui-enable is used)
 # FORWARD_MONGODB_EXPRESS_PORT=8081  # Web UI port
 
 # Deployment mode (automatically managed)
 DEPLOYMENT_MODE=production
 ```
+
+### Custom Hostname Configuration
+
+The hostname configuration allows you to use custom hostnames for replica set members, which is essential for proper client redirection and external access:
+
+**1. During setup, you can specify custom hostnames:**
+```bash
+Primary hostname [mongodb1]: mongo1.mycompany.com
+Secondary 1 hostname [mongodb2]: mongo2.mycompany.com  
+Secondary 2 hostname [mongodb3]: mongo3.mycompany.com
+```
+
+**2. Add entries to your /etc/hosts file:**
+```bash
+# Add these entries to /etc/hosts for hostname resolution
+127.0.0.1    mongo1.mycompany.com
+127.0.0.1    mongo2.mycompany.com
+127.0.0.1    mongo3.mycompany.com
+```
+
+**3. Or use the provided commands:**
+```bash
+echo '127.0.0.1    mongo1.mycompany.com' | sudo tee -a /etc/hosts
+echo '127.0.0.1    mongo2.mycompany.com' | sudo tee -a /etc/hosts
+echo '127.0.0.1    mongo3.mycompany.com' | sudo tee -a /etc/hosts
+```
+
+> **Why hostnames matter**: MongoDB replica sets use hostnames for member identification and client redirection. When you connect to a secondary node, MongoDB redirects write operations to the primary using these hostnames. Without proper hostname resolution, client redirection will fail.
 
 ### Custom Port Configuration
 
@@ -218,27 +260,13 @@ FORWARD_MONGODB3_PORT=27023
 FORWARD_MONGODB_EXPRESS_PORT=8082
 ```
 
-**2. Bind to specific interfaces:**
-```bash
-# Localhost only (default, secure)
-FORWARD_MONGODB1_PORT=127.0.0.1:27017
-
-# All interfaces (external access, less secure)
-FORWARD_MONGODB1_PORT=0.0.0.0:27017
-
-# Specific IP address
-FORWARD_MONGODB1_PORT=192.168.1.100:27017
-```
-
-**3. Configure non-standard setups:**
+**2. Configure non-standard setups:**
 ```bash
 # High ports for unprivileged users
 FORWARD_MONGODB1_PORT=37017
 FORWARD_MONGODB2_PORT=37018
 FORWARD_MONGODB3_PORT=37019
 ```
-
-> **Security Note**: Using `0.0.0.0` makes your database accessible from external networks. Only use this in trusted environments or with proper firewall rules.
 
 ## 🎯 Usage
 
@@ -274,15 +302,11 @@ mongodb://admin:devpassword123@localhost:27017/admin
 
 #### Replica Set Connection (Recommended)
 ```bash
-# Full cluster connection (default ports)
-mongodb://admin:devpassword123@localhost:27017,localhost:27018,localhost:27019/admin?replicaSet=rs
+# Full cluster connection (default hostnames)
+mongodb://admin:devpassword123@mongodb1:27017,mongodb2:27018,mongodb3:27019/admin?replicaSet=rs
 
-# Custom ports example
-mongodb://admin:devpassword123@localhost:27021,localhost:27022,localhost:27023/admin?replicaSet=rs
-
-# External access example (if configured with 0.0.0.0)
-mongodb://admin:devpassword123@your-server-ip:27017,your-server-ip:27018,your-server-ip:27019/admin?replicaSet=rs
-```
+# Custom hostnames example
+mongodb://admin:devpassword123@mongo1.mycompany.com:27017,mongo2.mycompany.com:27018,mongo3.mycompany.com:27019/admin?replicaSet=rs
 
 #### Python Example
 ```python
@@ -343,7 +367,6 @@ This will:
 ```bash
 $ make ui-enable
 📌 Web UI Port Configuration:
-   Format: [host:]port (e.g., 8081 or 0.0.0.0:8081 for external access)
 
 Mongo Express Web UI Port [8081]: 8082
 
@@ -408,7 +431,7 @@ make test-connection
 make test-replica
 
 # View cluster statistics
-docker exec mongo-cluster-mongodb1-1 mongosh --eval "db.runCommand('serverStatus')" --username admin --password devpassword123
+docker exec $(docker compose ps -q mongodb1) mongosh --eval "db.runCommand('serverStatus')" --username admin --password devpassword123
 ```
 
 ### Replica Set Behavior
@@ -445,7 +468,7 @@ make status
 make status
 
 # Check if setup completed successfully
-docker logs mongo-cluster-mongo-setup-1 2>/dev/null || echo "Setup container not found (normal if setup completed)"
+docker logs $(docker compose ps -q mongo-setup) 2>/dev/null || echo "Setup container not found (normal if setup completed)"
 ```
 
 **4. "Could not find member to sync from" on PRIMARY**
@@ -453,6 +476,36 @@ docker logs mongo-cluster-mongo-setup-1 2>/dev/null || echo "Setup container not
 - Only worry if SECONDARY nodes show this message persistently
 
 **5. Setup containers still running**
+```bash
+# This usually means setup failed or is still in progress
+make logs
+
+# If setup is stuck, you can force cleanup:
+docker compose down --remove-orphans
+rm -f docker-compose.override.yml
+make start
+```
+
+**6. Hostname resolution issues**
+```bash
+# Check if /etc/hosts entries are correct
+cat /etc/hosts | grep mongodb
+
+# Test hostname resolution
+ping mongodb1
+ping mongodb2
+ping mongodb3
+
+# Add missing entries (example)
+echo '127.0.0.1    mongodb1' | sudo tee -a /etc/hosts
+echo '127.0.0.1    mongodb2' | sudo tee -a /etc/hosts
+echo '127.0.0.1    mongodb3' | sudo tee -a /etc/hosts
+```
+
+**7. Client redirection failures**
+- This happens when replica set uses hostnames that clients can't resolve
+- Solution: Ensure hostnames in replica set config match /etc/hosts entries
+- Or use localhost-based connection strings for direct access
 ```bash
 # This usually means setup failed or is still in progress
 make logs
@@ -489,22 +542,22 @@ docker volume prune -f
 ### Accessing the MongoDB Shell
 ```bash
 # Connect to primary
-docker exec -it mongo-cluster-mongodb1-1 mongosh --username admin --password devpassword123
+docker exec -it $(docker compose ps -q mongodb1) mongosh --username admin --password devpassword123
 
 # Connect to secondary (read-only)
-docker exec -it mongo-cluster-mongodb2-1 mongosh --username admin --password devpassword123
+docker exec -it $(docker compose ps -q mongodb2) mongosh --username admin --password devpassword123
 ```
 
 ### Backup and Restore
 ```bash
 # Create backup
-docker exec mongo-cluster-mongodb1-1 mongodump --username admin --password devpassword123 --out /tmp/backup
+docker exec $(docker compose ps -q mongodb1) mongodump --username admin --password devpassword123 --out /tmp/backup
 
 # Copy backup to host
-docker cp mongo-cluster-mongodb1-1:/tmp/backup ./backup
+docker cp $(docker compose ps -q mongodb1):/tmp/backup ./backup
 
 # Restore backup
-docker exec -i mongo-cluster-mongodb1-1 mongorestore --username admin --password devpassword123 /tmp/backup
+docker exec -i $(docker compose ps -q mongodb1) mongorestore --username admin --password devpassword123 /tmp/backup
 ```
 
 ### Custom MongoDB Configuration
@@ -565,10 +618,10 @@ docker compose ps -a
 docker compose down --remove-orphans -v
 
 # View detailed container information
-docker inspect mongo-cluster-mongodb1-1
+docker inspect $(docker compose ps -q mongodb1)
 
 # Execute commands in containers
-docker exec -it mongo-cluster-mongodb1-1 bash
+docker exec -it $(docker compose ps -q mongodb1) bash
 ```
 
 ## 📄 File Structure

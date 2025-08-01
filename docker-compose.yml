@@ -1,14 +1,15 @@
-name: mongo-cluster
-
 services:
   mongodb1:
     image: percona/percona-server-mongodb:6.0-amd64
-    hostname: mongodb1
+    hostname: ${MONGODB1_HOST:-mongodb1}
+    networks:
+      - mongo-net
     ports:
-      - "${FORWARD_MONGODB1_PORT}:27017"
+      - "${FORWARD_MONGODB1_PORT}:${FORWARD_MONGODB1_PORT}"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGODB_PORT: ${FORWARD_MONGODB1_PORT}
     volumes:
       - mongo1_db:/data/db
       - mongo1_configdb:/data/configdb
@@ -19,10 +20,10 @@ services:
       - rs
       - --keyFile
       - /etc/mongo/mongodb-key
-    networks:
-      - mongo-net
+      - --port
+      - ${FORWARD_MONGODB1_PORT}
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping')"]
+      test: ["CMD", "mongosh", "--port", "${FORWARD_MONGODB1_PORT}", "--eval", "db.runCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,12 +31,15 @@ services:
 
   mongodb2:
     image: percona/percona-server-mongodb:6.0-amd64
-    hostname: mongodb2
+    hostname: ${MONGODB2_HOST:-mongodb2}
+    networks:
+      - mongo-net
     ports:
-      - "${FORWARD_MONGODB2_PORT}:27017"
+      - "${FORWARD_MONGODB2_PORT}:${FORWARD_MONGODB2_PORT}"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGODB_PORT: ${FORWARD_MONGODB2_PORT}
     volumes:
       - mongo2_db:/data/db
       - mongo2_configdb:/data/configdb
@@ -46,10 +50,10 @@ services:
       - rs
       - --keyFile
       - /etc/mongo/mongodb-key
-    networks:
-      - mongo-net
+      - --port
+      - ${FORWARD_MONGODB2_PORT}
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping')"]
+      test: ["CMD", "mongosh", "--port", "${FORWARD_MONGODB2_PORT}", "--eval", "db.runCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -57,12 +61,15 @@ services:
 
   mongodb3:
     image: percona/percona-server-mongodb:6.0-amd64
-    hostname: mongodb3
+    hostname: ${MONGODB3_HOST:-mongodb3}
+    networks:
+      - mongo-net
     ports:
-      - "${FORWARD_MONGODB3_PORT}:27017"
+      - "${FORWARD_MONGODB3_PORT}:${FORWARD_MONGODB3_PORT}"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGODB_PORT: ${FORWARD_MONGODB3_PORT}
     volumes:
       - mongo3_db:/data/db
       - mongo3_configdb:/data/configdb
@@ -73,10 +80,10 @@ services:
       - rs
       - --keyFile
       - /etc/mongo/mongodb-key
-    networks:
-      - mongo-net
+      - --port
+      - ${FORWARD_MONGODB3_PORT}
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping')"]
+      test: ["CMD", "mongosh", "--port", "${FORWARD_MONGODB3_PORT}", "--eval", "db.runCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5

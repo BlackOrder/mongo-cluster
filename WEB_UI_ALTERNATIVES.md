@@ -68,7 +68,7 @@ make test-connection  # Check if UI is running
 ### Direct MongoDB Connections
 ```bash
 # Connect via command line
-docker exec -it mongo-cluster-mongodb1-1 mongosh --username admin --password devpassword123
+docker exec -it $(docker compose ps -q mongodb1) mongosh --username admin --password devpassword123
 
 # Connect from host (if MongoDB client installed)
 mongosh "mongodb://admin:devpassword123@localhost:27017/"
