@@ -1,0 +1,64 @@
+# Setup phase containers - only used during initial cluster setup
+# These containers are automatically removed after successful initialization
+
+services:
+  # Create the MongoDB keyfile first (must run before MongoDB containers)
+  keyfile-init:
+    image: busybox
+    command: >
+      sh -c "
+      echo 'Creating dynamic keyfile...' &&
+      dd if=/dev/urandom bs=1 count=700 2>/dev/null | base64 | tr -d '=+/' | cut -c1-700 > /shared/mongodb-key &&
+      chmod 600 /shared/mongodb-key &&
+      chown 1001:0 /shared/mongodb-key &&
+      echo 'Keyfile created successfully (length:' $$(wc -c < /shared/mongodb-key) 'bytes)'
+      "
+    volumes:
+      - shared-keyfile:/shared
+    networks:
+      - mongo-net
+    restart: "no"
+
+  # MongoDB initialization helper - runs once to set up the replica set (setup phase only)
+  mongo-setup:
+    image: percona/percona-server-mongodb:6.0-amd64
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+      mongodb1:
+        condition: service_healthy
+      mongodb2:
+        condition: service_healthy
+      mongodb3:
+        condition: service_healthy
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - mongo-net
+    volumes:
+      # Override the image's /data/db volume to prevent anonymous volume creation
+      - /tmp/setup-temp:/data/db
+      - shared-keyfile:/shared
+    command: >
+      bash -c "
+        echo 'Waiting for MongoDB instances to be ready...' &&
+        sleep 10 &&
+        echo 'Initializing replica set...' &&
+        mongosh --host mongodb1:27017 -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --eval \"
+          rs.initiate({
+            _id: 'rs',
+            version: 1,
+            members: [
+              { _id: 0, host: 'mongodb1:27017', priority: 1000 },
+              { _id: 1, host: 'mongodb2:27017', priority: 999 },
+              { _id: 2, host: 'mongodb3:27017', priority: 998 }
+            ]
+          });
+        \" &&
+        echo 'Replica set initialized successfully!' &&
+        echo 'Cluster setup completed successfully!'
+      "
+    restart: "no"
+
+# Note: volumes and networks are defined in docker-compose.yml

@@ -1,1 +1,32 @@
+# Environment files
 .env
+.env.local
+.env.production
+
+# Temporary files
+mongo_cluster_key
+*.tmp
+*.log
+
+# Docker
+.docker/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node.js (if you add any Node.js tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

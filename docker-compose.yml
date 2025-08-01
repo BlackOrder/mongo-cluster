@@ -1,77 +1,86 @@
-version: "3"
 name: mongo-cluster
+
 services:
   mongodb1:
-    image: blackorder/mongo-cluster:latest
-    restart: unless-stopped
+    image: percona/percona-server-mongodb:6.0-amd64
     hostname: mongodb1
+    ports:
+      - "${FORWARD_MONGODB1_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
     volumes:
       - mongo1_db:/data/db
       - mongo1_configdb:/data/configdb
+      - shared-keyfile:/etc/mongo:ro
+    command: 
+      - --bind_ip_all
+      - --replSet
+      - rs
+      - --keyFile
+      - /etc/mongo/mongodb-key
+    networks:
+      - mongo-net
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping')"]
       interval: 10s
-      timeout: 10s
+      timeout: 5s
       retries: 5
-      start_period: 10s
-    environment:
-      MONGODB_CLUSTER_HOSTS: ${MONGODB_CLUSTER_HOSTS:?err}
-      MONGODB_CLUSTER_KEY: ${MONGODB_CLUSTER_KEY:?err}
-      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:?err}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:?err}
+      start_period: 40s
 
   mongodb2:
-    # build: .
-    image: blackorder/mongo-cluster:latest
-    restart: unless-stopped
+    image: percona/percona-server-mongodb:6.0-amd64
     hostname: mongodb2
+    ports:
+      - "${FORWARD_MONGODB2_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
     volumes:
       - mongo2_db:/data/db
       - mongo2_configdb:/data/configdb
+      - shared-keyfile:/etc/mongo:ro
+    command:
+      - --bind_ip_all
+      - --replSet
+      - rs
+      - --keyFile
+      - /etc/mongo/mongodb-key
+    networks:
+      - mongo-net
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping')"]
       interval: 10s
-      timeout: 10s
+      timeout: 5s
       retries: 5
-      start_period: 10s
-    environment:
-      MONGODB_CLUSTER_KEY: ${MONGODB_CLUSTER_KEY:?err}
-      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:?err}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:?err}
+      start_period: 40s
 
   mongodb3:
-    # build: .
-    image: blackorder/mongo-cluster:latest
-    restart: unless-stopped
+    image: percona/percona-server-mongodb:6.0-amd64
     hostname: mongodb3
+    ports:
+      - "${FORWARD_MONGODB3_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
     volumes:
       - mongo3_db:/data/db
       - mongo3_configdb:/data/configdb
+      - shared-keyfile:/etc/mongo:ro
+    command:
+      - --bind_ip_all
+      - --replSet
+      - rs
+      - --keyFile
+      - /etc/mongo/mongodb-key
+    networks:
+      - mongo-net
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping')"]
       interval: 10s
-      timeout: 10s
+      timeout: 5s
       retries: 5
-      start_period: 10s
-    environment:
-      MONGODB_CLUSTER_KEY: ${MONGODB_CLUSTER_KEY:?err}
-      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:?err}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:?err}
-      
-  mongo-express:
-    image: mongo-express:latest
-    restart: unless-stopped
-    hostname: mongo-express
-    depends_on:
-      mongodb1:
-        condition: service_healthy
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGODB_USERNAME:?err}
-      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGODB_PASSWORD:?err}
-      ME_CONFIG_MONGODB_URL: 'mongodb://${MONGODB_USERNAME:?err}:${MONGODB_PASSWORD:?err}@${MONGODB_CLUSTER_HOSTS:?err}/?replicaSet=rs'
-      ME_CONFIG_MONGODB_ENABLE_ADMIN: 'true'
-      ME_CONFIG_BASICAUTH_USERNAME: ${MONGODB_USERNAME:?err}
-      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGODB_PASSWORD:?err}
+      start_period: 40s
 
 volumes:
   mongo1_db: {}
@@ -80,3 +89,8 @@ volumes:
   mongo2_configdb: {}
   mongo3_db: {}
   mongo3_configdb: {}
+  shared-keyfile: {}
+
+networks:
+  mongo-net:
+    driver: bridge
