@@ -52,27 +52,40 @@ services:
         MONGODB2_PORT='${FORWARD_MONGODB2_PORT}' &&
         MONGODB3_PORT='${FORWARD_MONGODB3_PORT}' &&
         echo \"Configuration: Primary=\$$MONGODB1_HOST:\$$MONGODB1_PORT, Secondary1=\$$MONGODB2_HOST:\$$MONGODB2_PORT, Secondary2=\$$MONGODB3_HOST:\$$MONGODB3_PORT\" &&
-        echo 'Initializing replica set with consistent port mapping...' &&
-        echo 'NOTE: Each MongoDB instance runs on its assigned port both internally and externally' &&
+        echo 'Initializing replica set with optimized sync source configuration...' &&
+        echo 'NOTE: Using container hostnames for optimal internal communication' &&
         mongosh --host \$$MONGODB1_HOST:\$$MONGODB1_PORT -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --eval \"
           rs.initiate({
             _id: 'rs',
             version: 1,
             members: [
               { _id: 0, host: '\$$MONGODB1_HOST:\$$MONGODB1_PORT', priority: 1000 },
-              { _id: 1, host: '\$$MONGODB2_HOST:\$$MONGODB2_PORT', priority: 999 },
-              { _id: 2, host: '\$$MONGODB3_HOST:\$$MONGODB3_PORT', priority: 998 }
+              { _id: 1, host: '\$$MONGODB2_HOST:\$$MONGODB2_PORT', priority: 2 },
+              { _id: 2, host: '\$$MONGODB3_HOST:\$$MONGODB3_PORT', priority: 1 }
             ]
           });
         \" &&
-        echo 'Replica set initialized with consistent port mapping!' &&
-        echo 'Verifying configuration...' &&
+        echo 'Replica set initialized with optimized sync source configuration!' &&
+        echo 'Waiting for replica set to stabilize...' &&
+        sleep 5 &&
+        echo 'Applying optimized replica set settings...' &&
         mongosh --host \$$MONGODB1_HOST:\$$MONGODB1_PORT -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --eval \"
           console.log('Replica Set Configuration:');
           rs.config().members.forEach(function(member) {
-            console.log('  Member ' + member._id + ': ' + member.host);
+            console.log('  Member ' + member._id + ': ' + member.host + ' (priority: ' + member.priority + ')');
           });
           console.log('');
+          console.log('Applying optimized sync settings...');
+          var config = rs.config();
+          config.settings = {
+            chainingAllowed: true,
+            heartbeatIntervalMillis: 2000,
+            heartbeatTimeoutSecs: 10,
+            electionTimeoutMillis: 10000
+          };
+          config.version++;
+          rs.reconfig(config);
+          console.log('✅ Sync source optimization completed!');
           console.log('✅ Client redirection will now work correctly!');
           console.log('Each node runs on its assigned port both internally and externally.');
         \" &&
